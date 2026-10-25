@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.wrangler/
+logs/
+*.log
+backup/
+.DS_Store
+.env
+.dev.vars
+tsconfig.tsbuildinfo
+.claude/settings.local.json

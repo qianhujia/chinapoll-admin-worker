@@ -1,0 +1,51 @@
+{
+  "name": "chinapoll-admin-worker",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "db:migrate": "npx wrangler d1 migrations apply chinapoll-local --local --persist-to .wrangler",
+    "db:reset": "node -e \"require('fs').rmSync('.wrangler',{recursive:true,force:true})\" && npm run db:migrate",
+    "admin:worker:dev": "npx wrangler dev --config admin/wrangler.toml --port 8788 --local --persist-to .wrangler --live-reload=false",
+    "deploy:admin": "npx wrangler deploy --config admin/wrangler.toml --env production",
+    "deploy:admin:remote": "npx wrangler d1 migrations apply chinapoll --env production --remote && npx wrangler deploy --config admin/wrangler.toml --env production",
+    "admin:worker:dry-run": "npx wrangler deploy --config admin/wrangler.toml --dry-run",
+    "dev": "npm run db:migrate && npm run build && (npm run dev:web:serve & npx wrangler dev worker/index.ts --local --persist-to .wrangler --port 8787 --live-reload=false & wait)",
+    "dev:web": "npm run build && npm run dev:web:serve",
+    "dev:web:serve": "vite preview --host 0.0.0.0 --port 5173",
+    "dev:worker": "npm run db:migrate && npx wrangler dev worker/index.ts --local --persist-to .wrangler --port 8787 --live-reload=false",
+    "build": "tsc --noEmit && vite build",
+    "build:worker": "npx wrangler deploy --dry-run --outdir dist/worker",
+    "db:migrate:remote": "npx wrangler d1 migrations apply chinapoll --env production --remote",
+    "deploy": "npm run db:migrate:remote && npx wrangler deploy --env production",
+    "preview": "vite preview --host 0.0.0.0 --port 4173",
+    "lint": "tsc --noEmit",
+    "test": "vitest run --no-color && vitest run --config vitest.workers.config.ts --no-color",
+    "test:unit": "vitest run --no-color",
+    "test:workers": "vitest run --config vitest.workers.config.ts --no-color",
+    "test:sanity": "npm run lint && vitest run --no-color",
+    "worker:dev": "npm run dev:worker"
+  },
+  "cloudflare": {
+    "bindings": {
+      "SERVER_HMAC_KEY": {
+        "description": "Required 64-hex server secret for keyed network hashing and rate-limit buckets. Generate one with `openssl rand -hex 32`, then SAVE IT somewhere outside Cloudflare (a password manager or secret vault): Cloudflare never displays a stored secret again. It no longer affects poll or comment ownership, which is derived from each account's own author key. See docs/RUNBOOK.md."
+      }
+    }
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.23.0",
+    "@cloudflare/workers-types": "^5.20261009.1",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.6.4",
+    "lucide": "^1.53.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.10",
+    "vitest": "^4.1.11",
+    "wrangler": "^4.149.0"
+  }
+}

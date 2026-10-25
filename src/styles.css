@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+:root {
+  --page-width: 960px;
+}
+
+input:not([type="radio"]):focus,
+textarea:focus {
+  border-color: #9bb8e5;
+  outline: none;
+}
+
+@theme {
+  --color-page: #f4f7fb;
+  --color-panel: #ffffff;
+  --color-primary: #143d7d;
+  --color-primary-soft: #dfeafc;
+  --color-ink: #1d2430;
+  --color-muted: #5d6470;
+  --color-border: #dfe5ee;
+  --shadow-card: 0 10px 30px rgba(20, 61, 125, 0.08);
+  --font-sans: Inter, 'Noto Sans SC', 'Segoe UI', sans-serif;
+}

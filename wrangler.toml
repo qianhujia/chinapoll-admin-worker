@@ -1,0 +1,101 @@
+name = "chinapoll-admin-worker"
+main = "worker/index.ts"
+compatibility_date = "2026-10-08"
+
+[triggers]
+crons = ["0 * * * *"]
+
+[durable_objects]
+bindings = [
+  { name = "RATE_LIMITER", class_name = "RateLimiter" },
+  { name = "PASSWORD_HASHER", class_name = "PasswordHasher" },
+  { name = "VIEW_COUNTER", class_name = "ViewCounter" }
+]
+
+# Durable Object migration list. This is unrelated to the D1 migrations_table
+# setting below, which names the D1 tracking table. All classes are SQLite-backed
+# (`new_sqlite_classes`); nothing has been deployed yet, so the single `v1` tag
+# declares them in their final storage backend.
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RateLimiter", "PasswordHasher", "ViewCounter"]
+
+[assets]
+directory = "./dist/web"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+# Every request goes through the Worker so the HTML document receives its Content
+# Security Policy on every route, including deep links such as /poll/12.
+run_worker_first = true
+
+# Cloudflare Workers AI, used only by the optional AI assistance endpoints. The
+# feature is off unless the `ai_enable` setting is turned on.
+[ai]
+binding = "AI"
+
+[vars]
+# Turnstile is configured only through environment variables. The feature stays
+# off while either value is empty, which is the local default; put both in the
+# ignored `.dev.vars` file to test the widget locally. In production set the site
+# key under `[env.production.vars]` and store the secret with
+#   npx wrangler secret put TURNSTILE_SECRET_KEY --env production
+# TURNSTILE_SITE_KEY = "0x4AAAAAAA..."
+
+# SERVER_HMAC_KEY is a required Worker secret, not a var, so it has no entry here. Set
+# it for production and KEEP THE VALUE: Cloudflare never displays a stored secret again,
+# and it is the only input to the poll and comment owner hashes, so a different key can
+# never match existing poll or comment ownership. Store it in a password manager or a
+# secret vault before the deployment that sets it is forgotten.
+#   npx wrangler secret put SERVER_HMAC_KEY --env production
+#   npx wrangler secret list --env production    # lists names only, never values
+# See docs/RUNBOOK.md, "Migrating to another Cloudflare account".
+
+[[d1_databases]]
+binding = "DB"
+database_name = "chinapoll"
+database_id = "510933dd-f981-4584-9570-5b4ca232d11e"
+migrations_dir = "./migrations"
+migrations_table = "migrations"
+
+# Production environment targeted by the deploy workflow with `--env production`.
+#
+# The D1 binding is declared by database *name* only: wrangler resolves the real
+# database UUID through the API at deploy time, so no account-specific id is
+# committed to the repository. Migrations are applied the same way:
+#   npx wrangler d1 migrations apply chinapoll --env production --remote
+# `name` is pinned so the environment deploy targets the same Worker the Deploy
+# button creates.
+[env.production]
+name = "chinapoll-worker"
+workers_dev = false
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "chinapoll"
+migrations_dir = "./migrations"
+migrations_table = "migrations"
+
+# vars and durable_objects are not inherited from the top level, so they are
+# repeated here. The Durable Object migration list and the AI binding are per
+# environment as well.
+[env.production.vars]
+# Turnstile is on only when both TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY are
+# set. The site key is public by design, so it belongs here (or in a secret of the
+# same name, but never both); the secret must be
+# uploaded separately with
+#   npx wrangler secret put TURNSTILE_SECRET_KEY --env production
+# TURNSTILE_SITE_KEY = "0x4AAAAAAA..."
+
+[env.production.durable_objects]
+bindings = [
+  { name = "RATE_LIMITER", class_name = "RateLimiter" },
+  { name = "PASSWORD_HASHER", class_name = "PasswordHasher" },
+  { name = "VIEW_COUNTER", class_name = "ViewCounter" }
+]
+
+[env.production.ai]
+binding = "AI"
+
+[[env.production.migrations]]
+tag = "v1"
+new_sqlite_classes = ["RateLimiter", "PasswordHasher", "ViewCounter"]
